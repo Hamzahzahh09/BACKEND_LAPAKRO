@@ -27,7 +27,9 @@ export class ReviewsController {
     @CurrentUser() user: { userId: string },
     @Body() dto: CreateReviewDto,
   ) {
-    const transaction = await this.transactionsService.findById(dto.transactionId);
+    const transaction = await this.transactionsService.findById(
+      dto.transactionId,
+    );
     if (transaction.buyerId !== user.userId) {
       throw new ForbiddenException('Only buyer can review');
     }
@@ -65,7 +67,11 @@ export class ReviewsController {
     @Param('id') id: string,
     @Body() body: { content: string },
   ) {
-    const review = await this.reviewsService.reply(id, user.userId, body.content);
+    const review = await this.reviewsService.reply(
+      id,
+      user.userId,
+      body.content,
+    );
     return { success: true, data: review, message: 'Reply added' };
   }
 }

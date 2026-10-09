@@ -1,7 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SellerRatingService } from '../services/seller-rating.service';
-import { CreateSellerRatingDto, SellerStatsDto } from '../dtos/seller-rating.dto';
+import {
+  CreateSellerRatingDto,
+  SellerStatsDto,
+} from '../dtos/seller-rating.dto';
 
 @Controller('seller-ratings')
 export class SellerRatingController {
@@ -9,10 +23,7 @@ export class SellerRatingController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createRating(
-    @Request() req: any,
-    @Body() dto: CreateSellerRatingDto,
-  ) {
+  async createRating(@Request() req: any, @Body() dto: CreateSellerRatingDto) {
     return this.sellerRatingService.createRating(req.user.id, dto);
   }
 
@@ -44,10 +55,7 @@ export class SellerRatingController {
 
   @Delete(':ratingId')
   @UseGuards(JwtAuthGuard)
-  async deleteRating(
-    @Request() req: any,
-    @Param('ratingId') ratingId: string,
-  ) {
+  async deleteRating(@Request() req: any, @Param('ratingId') ratingId: string) {
     await this.sellerRatingService.deleteRating(ratingId, req.user.id);
     return { message: 'Seller rating deleted successfully' };
   }

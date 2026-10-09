@@ -39,7 +39,10 @@ export class TransactionsService {
   }
 
   async findById(id: string): Promise<Transaction> {
-    const transaction = await this.transactionRepository.findOne({ where: { id } });
+    const transaction = await this.transactionRepository.findOne({
+      where: { id },
+      relations: ['product', 'seller', 'buyer'],
+    });
     if (!transaction) {
       throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
     }
@@ -48,25 +51,23 @@ export class TransactionsService {
 
   async findByUser(userId: string): Promise<Transaction[]> {
     return this.transactionRepository.find({
-      where: [
-        { buyerId: userId },
-        { sellerId: userId }
-      ],
-      order: { createdAt: 'DESC' }
+      where: [{ buyerId: userId }, { sellerId: userId }],
+      relations: ['product', 'seller', 'buyer'],
+      order: { createdAt: 'DESC' },
     });
   }
 
   async findByBuyer(buyerId: string): Promise<Transaction[]> {
     return this.transactionRepository.find({
       where: { buyerId },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
   async findBySeller(sellerId: string): Promise<Transaction[]> {
     return this.transactionRepository.find({
       where: { sellerId },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -74,11 +75,23 @@ export class TransactionsService {
     return this.transactionRepository.find({ order: { createdAt: 'DESC' } });
   }
 
+  async findAllWithRelations(): Promise<Transaction[]> {
+    return this.transactionRepository.find({
+      relations: ['product', 'seller', 'buyer'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findAllPaginated(
     page: number,
     limit: number,
     status?: string,
-  ): Promise<{ data: Transaction[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: Transaction[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const qb = this.transactionRepository.createQueryBuilder('t');
     if (status) {
       qb.where('t.status = :status', { status });
@@ -89,16 +102,32 @@ export class TransactionsService {
     return { data, total, page, limit };
   }
 
-  async confirmBySeller(id: string, sellerId: string): Promise<Transaction> {
+  async confirmBySeller(
+    id: string,
+    sellerId: string,
+    deliveryNotes?: string,
+  ): Promise<Transaction> {
     const transaction = await this.findById(id);
     if (transaction.sellerId !== sellerId) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    if (transaction.status !== 'pending') {
-      throw new HttpException('Invalid transaction status', HttpStatus.BAD_REQUEST);
+    // Seller boleh kirim saat masih pending (belum dibayar) maupun
+    // awaiting_seller (sudah dibayar via Midtrans, tinggal kirim).
+    if (
+      transaction.status !== 'pending' &&
+      transaction.status !== 'awaiting_seller'
+    ) {
+      throw new HttpException(
+        'Invalid transaction status',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     transaction.status = 'awaiting_buyer';
     transaction.updatedAt = new Date();
+    if (deliveryNotes !== undefined) {
+      transaction.deliveryNotes = deliveryNotes;
+    }
+    transaction.deliveredAt = new Date();
     return this.transactionRepository.save(transaction);
   }
 
@@ -108,7 +137,10 @@ export class TransactionsService {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
     if (transaction.status !== 'awaiting_buyer') {
-      throw new HttpException('Invalid transaction status', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Invalid transaction status',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     transaction.status = 'completed';
     transaction.escrowReleased = true;
@@ -117,13 +149,29 @@ export class TransactionsService {
     return this.transactionRepository.save(transaction);
   }
 
-  async cancel(id: string, userId: string): Promise<Transaction> {
+  /**
+   * Tandai transaksi SUDAH DIBAYAR (via Midtrans sync/webhook).
+   * pending -> awaiting_seller. Status lain tidak diubah (idempotent).
+   */
+  async markPaid(id: string): Promise<Transaction> {
     const transaction = await this.findById(id);
+    if (transaction.status === 'pending') {
+      transaction.status = 'awaiting_seller';
+      transaction.updatedAt = new Date();
+      return this.transactionRepository.save(transaction);
+    }
+    return transaction;
+  }
+
+  async cancel(id: string, userId: string): Promise<Transaction> {    const transaction = await this.findById(id);
     if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
     if (transaction.status === 'completed') {
-      throw new HttpException('Cannot cancel completed transaction', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Cannot cancel completed transaction',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     transaction.status = 'cancelled';
     transaction.cancelledAt = new Date();
@@ -191,5 +239,13 @@ export class TransactionsService {
     }
     return releasedIds;
   }
-}
 
+  async forceComplete(id: string): Promise<Transaction> {
+    const transaction = await this.findById(id);
+    transaction.status = 'completed';
+    transaction.escrowReleased = true;
+    transaction.completedAt = new Date();
+    transaction.updatedAt = new Date();
+    return this.transactionRepository.save(transaction);
+  }
+}

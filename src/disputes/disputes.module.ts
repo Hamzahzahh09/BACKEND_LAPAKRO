@@ -17,4 +17,3 @@ import { Dispute } from './entities/dispute.entity';
   exports: [DisputesService],
 })
 export class DisputesModule {}
-

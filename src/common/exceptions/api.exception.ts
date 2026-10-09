@@ -60,19 +60,43 @@ export class ConflictError extends ApiError {
 }
 
 export class InternalServerError extends ApiError {
-  constructor(message: string = 'Internal Server Error', context?: Record<string, any>) {
-    super(message, HttpStatus.INTERNAL_SERVER_ERROR, 'Internal Server Error', context);
+  constructor(
+    message: string = 'Internal Server Error',
+    context?: Record<string, any>,
+  ) {
+    super(
+      message,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      'Internal Server Error',
+      context,
+    );
   }
 }
 
 export class ServiceUnavailableError extends ApiError {
-  constructor(message: string = 'Service Unavailable', context?: Record<string, any>) {
-    super(message, HttpStatus.SERVICE_UNAVAILABLE, 'Service Unavailable', context);
+  constructor(
+    message: string = 'Service Unavailable',
+    context?: Record<string, any>,
+  ) {
+    super(
+      message,
+      HttpStatus.SERVICE_UNAVAILABLE,
+      'Service Unavailable',
+      context,
+    );
   }
 }
 
 export class RateLimitError extends ApiError {
-  constructor(message: string = 'Too many requests', context?: Record<string, any>) {
-    super(message, HttpStatus.TOO_MANY_REQUESTS, 'Rate Limit Exceeded', context);
+  constructor(
+    message: string = 'Too many requests',
+    context?: Record<string, any>,
+  ) {
+    super(
+      message,
+      HttpStatus.TOO_MANY_REQUESTS,
+      'Rate Limit Exceeded',
+      context,
+    );
   }
 }

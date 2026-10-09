@@ -23,7 +23,9 @@ export class EmailService {
         },
       });
     } else {
-      this.logger.warn('SMTP configuration is not complete. Emails will only be simulated in console.');
+      this.logger.warn(
+        'SMTP configuration is not complete. Emails will only be simulated in console.',
+      );
     }
   }
 
@@ -39,10 +41,15 @@ export class EmailService {
           subject,
           text,
         });
-        this.logger.log(`OTP Email successfully sent to ${email} via Nodemailer (Mailtrap SMTP)`);
+        this.logger.log(
+          `OTP Email successfully sent to ${email} via Nodemailer (Mailtrap SMTP)`,
+        );
         return true;
       } catch (error) {
-        this.logger.error(`Failed to send OTP Email to ${email} via Nodemailer`, error.stack);
+        this.logger.error(
+          `Failed to send OTP Email to ${email} via Nodemailer`,
+          error.stack,
+        );
         this.simulateConsoleOtp(email, otp);
         return false;
       }
@@ -53,7 +60,9 @@ export class EmailService {
   }
 
   private simulateConsoleOtp(email: string, otp: string) {
-    this.logger.log(`[SIMULATED EMAIL] To: ${email} | Subject: Verifikasi Akun | OTP: ${otp}`);
+    this.logger.log(
+      `[SIMULATED EMAIL] To: ${email} | Subject: Verifikasi Akun | OTP: ${otp}`,
+    );
     console.log(`\n======================================`);
     console.log(`✉️ SIMULATED EMAIL SENT (FALLBACK)`);
     console.log(`To: ${email}`);
@@ -62,4 +71,3 @@ export class EmailService {
     console.log(`======================================\n`);
   }
 }
-

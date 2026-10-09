@@ -58,10 +58,7 @@ export class ReviewsService {
 
   async getByUser(userId: string): Promise<Review[]> {
     return this.reviewRepository.find({
-      where: [
-        { buyerId: userId },
-        { sellerId: userId }
-      ],
+      where: [{ buyerId: userId }, { sellerId: userId }],
       order: { createdAt: 'DESC' },
     });
   }
@@ -73,7 +70,9 @@ export class ReviewsService {
     });
   }
 
-  async getAverageRating(sellerId: string): Promise<{ average: number; count: number }> {
+  async getAverageRating(
+    sellerId: string,
+  ): Promise<{ average: number; count: number }> {
     const sellerReviews = await this.getBySeller(sellerId);
     if (sellerReviews.length === 0) {
       return { average: 0, count: 0 };
@@ -85,8 +84,14 @@ export class ReviewsService {
     };
   }
 
-  async reply(reviewId: string, sellerId: string, reply: string): Promise<Review> {
-    const review = await this.reviewRepository.findOne({ where: { id: reviewId } });
+  async reply(
+    reviewId: string,
+    sellerId: string,
+    reply: string,
+  ): Promise<Review> {
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId },
+    });
     if (!review) {
       throw new HttpException('Review not found', HttpStatus.NOT_FOUND);
     }
@@ -102,12 +107,16 @@ export class ReviewsService {
     return this.reviewRepository.save(review);
   }
 
-  async updateProductRating(productId: string): Promise<{ average: number; count: number }> {
+  async updateProductRating(
+    productId: string,
+  ): Promise<{ average: number; count: number }> {
     const productReviews = await this.reviewRepository.find({
       where: { productId },
     });
     if (productReviews.length === 0) {
-      const product = await this.productRepository.findOne({ where: { id: productId } });
+      const product = await this.productRepository.findOne({
+        where: { id: productId },
+      });
       if (product) {
         product.averageRating = 0;
         product.reviewCount = 0;
@@ -119,7 +128,9 @@ export class ReviewsService {
     const sum = productReviews.reduce((acc, r) => acc + r.rating, 0);
     const average = Math.round((sum / productReviews.length) * 10) / 10;
 
-    const product = await this.productRepository.findOne({ where: { id: productId } });
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+    });
     if (product) {
       product.averageRating = average;
       product.reviewCount = productReviews.length;

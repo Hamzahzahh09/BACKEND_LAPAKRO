@@ -40,11 +40,17 @@ export class EmailService {
   }
 
   private initializeTransporter() {
-    const host = this.configService.get<string>('MAILTRAP_HOST', 'live.smtp.mailtrap.io');
+    const host = this.configService.get<string>(
+      'MAILTRAP_HOST',
+      'live.smtp.mailtrap.io',
+    );
     const port = this.configService.get<number>('MAILTRAP_PORT', 587);
     const user = this.configService.get<string>('MAILTRAP_USER');
     const pass = this.configService.get<string>('MAILTRAP_PASS');
-    this.fromEmail = this.configService.get<string>('MAILTRAP_FROM_EMAIL', 'noreply@lapakro.com');
+    this.fromEmail = this.configService.get<string>(
+      'MAILTRAP_FROM_EMAIL',
+      'noreply@lapakro.com',
+    );
 
     if (user && pass) {
       this.transporter = nodemailer.createTransport({
@@ -57,14 +63,19 @@ export class EmailService {
       });
       this.logger.log('Email service initialized');
     } else {
-      this.logger.warn('Email service not configured - using dummy transporter');
+      this.logger.warn(
+        'Email service not configured - using dummy transporter',
+      );
       this.transporter = nodemailer.createTransport({
         jsonTransport: true,
       });
     }
   }
 
-  private getTemplate(template: EmailTemplate, context: Record<string, any>): string {
+  private getTemplate(
+    template: EmailTemplate,
+    context: Record<string, any>,
+  ): string {
     switch (template) {
       case EmailTemplate.WELCOME:
         return this.getWelcomeTemplate(context);
@@ -98,8 +109,19 @@ export class EmailService {
   }
 
   async send(options: EmailOptions): Promise<boolean> {
+    // TEMPORARILY DISABLED EMAIL SENDING
+    this.logger.log(
+      `[EMAIL DISABLED] Would have sent: ${options.subject} to ${options.to}`,
+    );
+    return true;
+
     try {
-      const html = options.html || this.getTemplate(options.template as EmailTemplate, options.context || {});
+      const html =
+        options.html ||
+        this.getTemplate(
+          options.template as EmailTemplate,
+          options.context || {},
+        );
 
       const mailOptions = {
         from: this.fromEmail,

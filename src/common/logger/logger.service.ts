@@ -49,24 +49,36 @@ export class LoggerService extends Logger {
   }
 
   error(message: string, error?: any, meta?: any) {
-    const errorInfo = error instanceof Error
-      ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        }
-      : error;
-    super.error(this.formatMessage(LogLevel.ERROR, message, { error: errorInfo, ...meta }));
+    const errorInfo =
+      error instanceof Error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : error;
+    super.error(
+      this.formatMessage(LogLevel.ERROR, message, {
+        error: errorInfo,
+        ...meta,
+      }),
+    );
   }
 
   fatal(message: string, error?: any, meta?: any) {
-    const errorInfo = error instanceof Error
-      ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        }
-      : error;
-    super.error(this.formatMessage(LogLevel.FATAL, message, { error: errorInfo, ...meta }));
+    const errorInfo =
+      error instanceof Error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : error;
+    super.error(
+      this.formatMessage(LogLevel.FATAL, message, {
+        error: errorInfo,
+        ...meta,
+      }),
+    );
   }
 }

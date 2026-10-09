@@ -26,7 +26,9 @@ export class DisputesController {
     @CurrentUser() user: { userId: string },
     @Body() dto: CreateDisputeDto,
   ) {
-    const transaction = await this.transactionsService.findById(dto.transactionId);
+    const transaction = await this.transactionsService.findById(
+      dto.transactionId,
+    );
     if (transaction.buyerId !== user.userId) {
       throw new ForbiddenException('Only buyer can open dispute');
     }
@@ -34,9 +36,12 @@ export class DisputesController {
     const now = new Date();
     if (transaction.completedAt) {
       const daysSinceDelivery =
-        (now.getTime() - new Date(transaction.completedAt).getTime()) / (1000 * 60 * 60 * 24);
+        (now.getTime() - new Date(transaction.completedAt).getTime()) /
+        (1000 * 60 * 60 * 24);
       if (daysSinceDelivery > 3) {
-        throw new ForbiddenException('Dispute must be opened within 3 days of delivery');
+        throw new ForbiddenException(
+          'Dispute must be opened within 3 days of delivery',
+        );
       }
     }
 

@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -44,8 +50,8 @@ export class User {
   @Column({ type: 'varchar', default: 'none' })
   sellerApplicationStatus: 'none' | 'pending' | 'approved' | 'rejected';
 
-  @Column({ type: 'text', default: '' })
-  sellerApplicationNotes: string;
+  @Column({ type: 'text', nullable: true, default: null })
+  sellerApplicationNotes: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   otp: string | null;

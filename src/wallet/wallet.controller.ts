@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -27,7 +21,11 @@ export class WalletController {
     @CurrentUser() user: { userId: string },
     @Body() dto: DepositDto,
   ) {
-    const tx = await this.walletService.deposit(user.userId, dto.amount, dto.paymentMethod);
+    const tx = await this.walletService.deposit(
+      user.userId,
+      dto.amount,
+      dto.paymentMethod,
+    );
     return { success: true, data: tx, message: 'Deposit successful' };
   }
 
@@ -52,4 +50,3 @@ export class WalletController {
     return { success: true, data: history };
   }
 }
-

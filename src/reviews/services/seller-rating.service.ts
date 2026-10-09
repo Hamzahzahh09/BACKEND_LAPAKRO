@@ -3,9 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { SellerRating } from '../entities/seller-rating.entity';
-import { CreateSellerRatingDto, SellerStatsDto } from '../dtos/seller-rating.dto';
+import {
+  CreateSellerRatingDto,
+  SellerStatsDto,
+} from '../dtos/seller-rating.dto';
 import { LoggerService } from '../../common/logger/logger.service';
-import { NotFoundError, ValidationError } from '../../common/exceptions/api.exception';
+import {
+  NotFoundError,
+  ValidationError,
+} from '../../common/exceptions/api.exception';
 
 @Injectable()
 export class SellerRatingService {
@@ -29,7 +35,9 @@ export class SellerRatingService {
       if (dto.aspects) {
         Object.values(dto.aspects).forEach((value) => {
           if (value < 1 || value > 5) {
-            throw new ValidationError('All aspect ratings must be between 1 and 5');
+            throw new ValidationError(
+              'All aspect ratings must be between 1 and 5',
+            );
           }
         });
       }
@@ -79,7 +87,8 @@ export class SellerRatingService {
 
       // Calculate average rating
       const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0);
-      const averageRating = Math.round((totalRating / ratings.length) * 10) / 10;
+      const averageRating =
+        Math.round((totalRating / ratings.length) * 10) / 10;
 
       // Calculate rating breakdown
       const ratingBreakdown = {
@@ -97,25 +106,37 @@ export class SellerRatingService {
         aspectsAverage = {
           productQuality:
             Math.round(
-              (ratingsWithAspects.reduce((sum, r) => sum + (r.aspects?.productQuality ?? 0), 0) /
+              (ratingsWithAspects.reduce(
+                (sum, r) => sum + (r.aspects?.productQuality ?? 0),
+                0,
+              ) /
                 ratingsWithAspects.length) *
                 10,
             ) / 10,
           communication:
             Math.round(
-              (ratingsWithAspects.reduce((sum, r) => sum + (r.aspects?.communication ?? 0), 0) /
+              (ratingsWithAspects.reduce(
+                (sum, r) => sum + (r.aspects?.communication ?? 0),
+                0,
+              ) /
                 ratingsWithAspects.length) *
                 10,
             ) / 10,
           shipping:
             Math.round(
-              (ratingsWithAspects.reduce((sum, r) => sum + (r.aspects?.shipping ?? 0), 0) /
+              (ratingsWithAspects.reduce(
+                (sum, r) => sum + (r.aspects?.shipping ?? 0),
+                0,
+              ) /
                 ratingsWithAspects.length) *
                 10,
             ) / 10,
           accuracy:
             Math.round(
-              (ratingsWithAspects.reduce((sum, r) => sum + (r.aspects?.accuracy ?? 0), 0) /
+              (ratingsWithAspects.reduce(
+                (sum, r) => sum + (r.aspects?.accuracy ?? 0),
+                0,
+              ) /
                 ratingsWithAspects.length) *
                 10,
             ) / 10,
@@ -190,7 +211,9 @@ export class SellerRatingService {
       if (dto.aspects) {
         Object.values(dto.aspects).forEach((value) => {
           if (value < 1 || value > 5) {
-            throw new ValidationError('All aspect ratings must be between 1 and 5');
+            throw new ValidationError(
+              'All aspect ratings must be between 1 and 5',
+            );
           }
         });
         rating.aspects = dto.aspects;

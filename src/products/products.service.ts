@@ -38,7 +38,9 @@ export class ProductsService {
     return this.productRepository.save(product);
   }
 
-  async findAll(query: QueryProductDto): Promise<{ data: Product[]; total: number; page: number; limit: number }> {
+  async findAll(
+    query: QueryProductDto,
+  ): Promise<{ data: Product[]; total: number; page: number; limit: number }> {
     const qb = this.productRepository.createQueryBuilder('product');
 
     // Hanya tampilkan produk yang aktif dan belum dihapus
@@ -46,9 +48,12 @@ export class ProductsService {
     qb.andWhere('product.status = :status', { status: 'active' });
 
     if (query.search) {
-      qb.andWhere('(LOWER(product.title) LIKE :search OR LOWER(product.description) LIKE :search)', {
-        search: `%${query.search.toLowerCase()}%`,
-      });
+      qb.andWhere(
+        '(LOWER(product.title) LIKE :search OR LOWER(product.description) LIKE :search)',
+        {
+          search: `%${query.search.toLowerCase()}%`,
+        },
+      );
     }
 
     if (query.category) {
@@ -66,7 +71,9 @@ export class ProductsService {
     }
 
     if (query.minRating !== undefined) {
-      qb.andWhere('product.averageRating >= :minRating', { minRating: query.minRating });
+      qb.andWhere('product.averageRating >= :minRating', {
+        minRating: query.minRating,
+      });
     }
 
     if (query.sellerId) {
@@ -74,7 +81,9 @@ export class ProductsService {
     }
 
     const sortBy = query.sortBy || 'newest';
-    const sortOrder = (query.sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
+    const sortOrder = (query.sortOrder || 'desc').toUpperCase() as
+      | 'ASC'
+      | 'DESC';
 
     switch (sortBy) {
       case 'newest':
@@ -103,19 +112,44 @@ export class ProductsService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
+    qb.leftJoinAndSelect('product.seller', 'seller');
+
     const [data, total] = await qb.take(limit).skip(skip).getManyAndCount();
 
-    return { data, total, page, limit };
+    return { data: data.map(this.formatProduct), total, page, limit };
   }
 
   async findById(id: string): Promise<Product> {
-    const product = await this.productRepository.findOne({
-      where: { id, isDeleted: false },
-    });
+    const product = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.seller', 'seller')
+      .where('product.id = :id', { id })
+      .andWhere('product.isDeleted = :isDeleted', { isDeleted: false })
+      .getOne();
     if (!product) {
       throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
     }
-    return product;
+    return this.formatProduct(product);
+  }
+
+  private formatProduct(product: Product): Product & {
+    seller?: {
+      id: string;
+      name: string;
+      photo: string;
+      sellerApplicationStatus: string;
+    };
+  } {
+    const result = { ...product } as any;
+    if (product.seller) {
+      result.seller = {
+        id: product.seller.id,
+        name: product.seller.name,
+        photo: product.seller.photo,
+        sellerApplicationStatus: product.seller.sellerApplicationStatus,
+      };
+    }
+    return result;
   }
 
   async findBySeller(sellerId: string): Promise<Product[]> {
@@ -170,7 +204,11 @@ export class ProductsService {
     });
   }
 
-  async reviewListing(id: string, status: 'active' | 'rejected', reason?: string): Promise<Product> {
+  async reviewListing(
+    id: string,
+    status: 'active' | 'rejected',
+    reason?: string,
+  ): Promise<Product> {
     const product = await this.findById(id);
     product.status = status;
     if (reason) {
@@ -180,7 +218,7 @@ export class ProductsService {
     return this.productRepository.save(product);
   }
 
-  async updateRating(productId: string): Promise<void> {
+  async updateRating(_productId: string): Promise<void> {
     // Implementasi rating diatur di review.service
   }
 
@@ -193,4 +231,3 @@ export class ProductsService {
     }
   }
 }
-

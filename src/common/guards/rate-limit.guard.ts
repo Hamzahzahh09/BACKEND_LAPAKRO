@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  HttpStatus,
+} from '@nestjs/common';
 import { RateLimitError } from '../exceptions/api.exception';
 
 interface RateLimitStore {
@@ -60,7 +65,7 @@ export class RateLimitGuard implements CanActivate {
     }
 
     // Add rate limit info to request
-    (request as any).rateLimit = {
+    request.rateLimit = {
       limit: this.requestsPerMinute,
       current: userData.count,
       remaining: this.requestsPerMinute - userData.count,

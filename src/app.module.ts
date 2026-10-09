@@ -25,10 +25,14 @@ import { Review } from './reviews/entities/review.entity';
 import { SellerRating } from './reviews/entities/seller-rating.entity';
 import { Dispute } from './disputes/entities/dispute.entity';
 import { ChatMessage } from './chat/entities/chat-message.entity';
+import { Conversation } from './chat/entities/conversation.entity';
 
 // Common modules
-import { LoggerService } from './common/logger/logger.service';
+import { LoggerModule } from './common/logger/logger.module';
 import { HttpLoggingMiddleware } from './common/middleware/http-logging.middleware';
+import { OrdersModule } from './orders/orders.module';
+
+import { Order } from './orders/entities/order.entity';
 
 @Module({
   imports: [
@@ -54,10 +58,18 @@ import { HttpLoggingMiddleware } from './common/middleware/http-logging.middlewa
           SellerRating,
           Dispute,
           ChatMessage,
+          Conversation,
+          Order,
         ],
-        synchronize: configService.get<string>('NODE_ENV', 'development') === 'development',
-        logging: configService.get<string>('NODE_ENV', 'development') === 'development',
-        migrationsRun: configService.get<string>('NODE_ENV', 'development') !== 'development',
+        synchronize:
+          configService.get<string>('NODE_ENV', 'development') ===
+          'development',
+        logging:
+          configService.get<string>('NODE_ENV', 'development') ===
+          'development',
+        migrationsRun:
+          configService.get<string>('NODE_ENV', 'development') !==
+          'development',
       }),
     }),
     ThrottlerModule.forRoot([
@@ -67,6 +79,7 @@ import { HttpLoggingMiddleware } from './common/middleware/http-logging.middlewa
         ignoreUserAgents: [/bot|crawler/i],
       },
     ]),
+    LoggerModule,
     AuthModule,
     UsersModule,
     ProductsModule,
@@ -78,12 +91,12 @@ import { HttpLoggingMiddleware } from './common/middleware/http-logging.middlewa
     DisputesModule,
     AdminModule,
     EmailModule,
+    OrdersModule,
   ],
-  providers: [LoggerService],
+  providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(HttpLoggingMiddleware).forRoutes('*');
   }
 }
-

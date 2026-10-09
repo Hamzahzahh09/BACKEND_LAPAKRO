@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsArray,
   Min,
-  Max,
   MinLength,
   MaxLength,
   IsIn,

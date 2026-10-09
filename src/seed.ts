@@ -39,7 +39,9 @@ async function bootstrap() {
   ];
 
   for (const seed of seeds) {
-    const existing = await userRepository.findOne({ where: { email: seed.email } });
+    const existing = await userRepository.findOne({
+      where: { email: seed.email },
+    });
     if (existing) {
       console.log(`${seed.label} account already exists.`);
     } else {

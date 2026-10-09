@@ -32,7 +32,7 @@ export class HttpLoggingMiddleware implements NestMiddleware {
     // Intercept response
     const originalSend = res.send;
     const logger = this.logger;
-    
+
     res.send = function (data: any) {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;

@@ -10,7 +10,6 @@ import {
   UseGuards,
   ForbiddenException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -23,7 +22,7 @@ import { hasSufficientRole } from '../common/constants/roles';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -35,13 +34,23 @@ export class ProductsController {
       throw new ForbiddenException('Only sellers can create products');
     }
     const product = await this.productsService.create(user.userId, dto);
-    return { success: true, data: product, message: 'Product created, pending review' };
+    return {
+      success: true,
+      data: product,
+      message: 'Product created, pending review',
+    };
   }
 
   @Get()
   async findAll(@Query() query: QueryProductDto) {
     const result = await this.productsService.findAll(query);
-    return { success: true, data: result.data, total: result.total, page: result.page, limit: result.limit };
+    return {
+      success: true,
+      data: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
   }
 
   @Get('categories')
@@ -71,7 +80,9 @@ export class ProductsController {
       throw new NotFoundException('Product not found');
     }
     const isOwnerOrAdmin =
-      user && (product.sellerId === user.userId || hasSufficientRole(user.role, 'admin'));
+      user &&
+      (product.sellerId === user.userId ||
+        hasSufficientRole(user.role, 'admin'));
     if (product.status !== 'active' && !isOwnerOrAdmin) {
       throw new NotFoundException('Product not found');
     }
@@ -89,7 +100,10 @@ export class ProductsController {
     if (!product || product.isDeleted) {
       throw new NotFoundException('Product not found');
     }
-    if (product.sellerId !== user.userId && !hasSufficientRole(user.role, 'admin')) {
+    if (
+      product.sellerId !== user.userId &&
+      !hasSufficientRole(user.role, 'admin')
+    ) {
       throw new ForbiddenException('You can only edit your own products');
     }
     const updated = await this.productsService.update(id, dto);
@@ -106,7 +120,10 @@ export class ProductsController {
     if (!product || product.isDeleted) {
       throw new NotFoundException('Product not found');
     }
-    if (product.sellerId !== user.userId && !hasSufficientRole(user.role, 'admin')) {
+    if (
+      product.sellerId !== user.userId &&
+      !hasSufficientRole(user.role, 'admin')
+    ) {
       throw new ForbiddenException('You can only delete your own products');
     }
     await this.productsService.remove(id);

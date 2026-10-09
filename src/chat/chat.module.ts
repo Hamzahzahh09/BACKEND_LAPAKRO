@@ -6,10 +6,20 @@ import { ChatController } from './chat.controller';
 import { AuthModule } from '../auth/auth.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { ChatMessage } from './entities/chat-message.entity';
+import { Conversation } from './entities/conversation.entity';
+import { User } from '../users/entities/user.entity';
+import { Product } from '../products/entities/product.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ChatMessage]),
+    TypeOrmModule.forFeature([
+      ChatMessage,
+      Conversation,
+      User,
+      Product,
+      Transaction,
+    ]),
     AuthModule,
     TransactionsModule,
   ],
@@ -18,3 +28,4 @@ import { ChatMessage } from './entities/chat-message.entity';
   exports: [ChatService],
 })
 export class ChatModule {}
+

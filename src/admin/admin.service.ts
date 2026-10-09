@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -7,16 +7,15 @@ import { DisputesService } from '../disputes/disputes.service';
 @Injectable()
 export class AdminService {
   constructor(
-    private usersService: UsersService,
-    private productsService: ProductsService,
-    private transactionsService: TransactionsService,
-    private disputesService: DisputesService,
+    private readonly usersService: UsersService,
+    private readonly productsService: ProductsService,
+    private readonly transactionsService: TransactionsService,
+    private readonly disputesService: DisputesService,
   ) {}
 
   async getDashboard() {
     const allUsers = await this.usersService.findAll();
     const allTransactions = await this.transactionsService.findAll();
-    const allDisputes = await this.disputesService.findAll();
 
     const totalUsers = allUsers.length;
     const totalSellers = allUsers.filter(
@@ -26,14 +25,21 @@ export class AdminService {
     const completedTransactions = allTransactions.filter(
       (t) => t.status === 'completed',
     );
-    const gmv = completedTransactions.reduce((sum, t) => sum + Number(t.totalPrice || 0), 0);
+    const gmv = completedTransactions.reduce(
+      (sum, t) => sum + Number(t.totalPrice ?? 0),
+      0,
+    );
     const disputedCount = allTransactions.filter(
       (t) => t.status === 'disputed',
     ).length;
-    const disputeRate = totalTransactions > 0 ? (disputedCount / totalTransactions) * 100 : 0;
-    const pendingProducts = (await this.productsService.getPendingListings()).length;
+    const disputeRate =
+      totalTransactions > 0 ? (disputedCount / totalTransactions) * 100 : 0;
+    const pendingProducts = (await this.productsService.getPendingListings())
+      .length;
     const openDisputes = (await this.disputesService.getOpenDisputes()).length;
-    const pendingSellerApps = (await this.usersService.getPendingSellerApplications()).length;
+    const pendingSellerApps = (
+      await this.usersService.getPendingSellerApplications()
+    ).length;
 
     return {
       stats: {
@@ -132,7 +138,7 @@ export class AdminService {
   }
 
   async rejectSeller(id: string, reason?: string) {
-    return this.usersService.approveSeller(id, false, reason || '');
+    return this.usersService.approveSeller(id, false, reason ?? '');
   }
 
   async getAllTransactions(page: number, limit: number, status?: string) {

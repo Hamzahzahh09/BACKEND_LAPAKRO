@@ -3,7 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { SellerRatingService } from './seller-rating.service';
 import { SellerRating } from '../entities/seller-rating.entity';
 import { LoggerService } from '../../common/logger/logger.service';
-import { NotFoundError, ValidationError } from '../../common/exceptions/api.exception';
+import {
+  NotFoundError,
+  ValidationError,
+} from '../../common/exceptions/api.exception';
 
 describe('SellerRatingService', () => {
   let service: SellerRatingService;
@@ -87,9 +90,33 @@ describe('SellerRatingService', () => {
   describe('getSellerStats', () => {
     it('should return seller statistics', async () => {
       const ratings = [
-        { rating: 5, aspects: { productQuality: 5, communication: 5, shipping: 5, accuracy: 5 } },
-        { rating: 4, aspects: { productQuality: 4, communication: 4, shipping: 4, accuracy: 4 } },
-        { rating: 5, aspects: { productQuality: 5, communication: 5, shipping: 5, accuracy: 5 } },
+        {
+          rating: 5,
+          aspects: {
+            productQuality: 5,
+            communication: 5,
+            shipping: 5,
+            accuracy: 5,
+          },
+        },
+        {
+          rating: 4,
+          aspects: {
+            productQuality: 4,
+            communication: 4,
+            shipping: 4,
+            accuracy: 4,
+          },
+        },
+        {
+          rating: 5,
+          aspects: {
+            productQuality: 5,
+            communication: 5,
+            shipping: 5,
+            accuracy: 5,
+          },
+        },
       ];
 
       mockRepository.find.mockResolvedValue(ratings);

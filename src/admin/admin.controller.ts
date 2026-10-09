@@ -15,12 +15,33 @@ import { AdminGuard } from '../common/guards/admin.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { hasSufficientRole } from '../common/constants/roles';
+import {
+  AdminPaginationQueryDto,
+  UpdateUserRoleDto,
+  RejectReasonDto,
+  ResolveDisputeDto,
+} from './dto';
+
+function parsePagination(
+  query: { page?: string; limit?: string },
+  defaultLimit = 20,
+) {
+  const parsedPage = Number.parseInt(query.page ?? '1', 10);
+  const parsedLimit = Number.parseInt(query.limit ?? `${defaultLimit}`, 10);
+  return {
+    page: Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage,
+    limit:
+      Number.isNaN(parsedLimit) || parsedLimit < 1
+        ? defaultLimit
+        : Math.min(parsedLimit, 100),
+  };
+}
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(
-    private adminService: AdminService,
+    private readonly adminService: AdminService,
   ) {}
 
   @Get('dashboard')
@@ -30,9 +51,8 @@ export class AdminController {
   }
 
   @Get('users')
-  async getUsers(@Query() query: { page?: string; limit?: string; search?: string }) {
-    const page = parseInt(query.page || '1', 10);
-    const limit = parseInt(query.limit || '20', 10);
+  async getUsers(@Query() query: AdminPaginationQueryDto) {
+    const { page, limit } = parsePagination(query, 20);
     const users = await this.adminService.getUsers(page, limit, query.search);
     return { success: true, data: users, page, limit };
   }
@@ -50,7 +70,7 @@ export class AdminController {
   async updateUserRole(
     @CurrentUser() admin: { userId: string; role: string },
     @Param('id') id: string,
-    @Body() body: { role: string },
+    @Body() body: UpdateUserRoleDto,
   ) {
     if (!['user', 'seller'].includes(body.role)) {
       throw new ForbiddenException('Can only assign user or seller role');
@@ -88,9 +108,8 @@ export class AdminController {
   }
 
   @Get('products')
-  async getAllProducts(@Query() query: { page?: string; limit?: string; status?: string }) {
-    const page = parseInt(query.page || '1', 10);
-    const limit = parseInt(query.limit || '20', 10);
+  async getAllProducts(@Query() query: AdminPaginationQueryDto) {
+    const { page, limit } = parsePagination(query, 20);
     const products = await this.adminService.getAllProducts(page, limit, query.status);
     return { success: true, data: products };
   }
@@ -104,7 +123,7 @@ export class AdminController {
   @Patch('products/:id/reject')
   async rejectProduct(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
   ) {
     const product = await this.adminService.rejectProduct(id, body.reason);
     return { success: true, data: product, message: 'Product rejected' };
@@ -131,16 +150,15 @@ export class AdminController {
   @Patch('sellers/:id/reject')
   async rejectSeller(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
   ) {
     const user = await this.adminService.rejectSeller(id, body.reason);
     return { success: true, data: user, message: 'Seller rejected' };
   }
 
   @Get('transactions')
-  async getAllTransactions(@Query() query: { page?: string; limit?: string; status?: string }) {
-    const page = parseInt(query.page || '1', 10);
-    const limit = parseInt(query.limit || '20', 10);
+  async getAllTransactions(@Query() query: AdminPaginationQueryDto) {
+    const { page, limit } = parsePagination(query, 20);
     const transactions = await this.adminService.getAllTransactions(page, limit, query.status);
     return { success: true, data: transactions };
   }
@@ -154,10 +172,14 @@ export class AdminController {
   @Patch('disputes/:id/resolve')
   async resolveDispute(
     @Param('id') id: string,
-    @Body() body: { resolution: string; note?: string; winnerId?: string },
+    @Body() body: ResolveDisputeDto,
   ) {
-    const resolution = body.resolution as 'full_refund' | 'partial_refund' | 'proceed';
-    const dispute = await this.adminService.resolveDispute(id, resolution, body.note || '', body.winnerId);
+    const dispute = await this.adminService.resolveDispute(
+      id,
+      body.resolution,
+      body.note ?? '',
+      body.winnerId,
+    );
     return { success: true, data: dispute, message: 'Dispute resolved' };
   }
 

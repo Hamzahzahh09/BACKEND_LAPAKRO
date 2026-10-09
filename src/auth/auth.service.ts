@@ -68,10 +68,16 @@ export class AuthService {
     }
 
     if (user.isBanned) {
-      throw new HttpException('Your account has been banned', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Your account has been banned',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password || '');
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.password || '',
+    );
     if (!isPasswordValid) {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
@@ -84,7 +90,11 @@ export class AuthService {
     };
   }
 
-  async googleAuth(googleData: { email: string; name: string; googleId: string }) {
+  async googleAuth(googleData: {
+    email: string;
+    name: string;
+    googleId: string;
+  }) {
     let user = await this.userRepository.findOne({
       where: { email: googleData.email },
     });
@@ -175,9 +185,7 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User) {
-    const { password, otp, ...rest } = user;
+    const { password: _password, otp: _otp, ...rest } = user;
     return rest;
   }
 }
-
-

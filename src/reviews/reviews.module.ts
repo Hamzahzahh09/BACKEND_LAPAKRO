@@ -21,4 +21,3 @@ import { Product } from '../products/entities/product.entity';
   exports: [ReviewsService, SellerRatingService],
 })
 export class ReviewsModule {}
-

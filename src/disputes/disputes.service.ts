@@ -62,20 +62,14 @@ export class DisputesService {
 
   async findByUser(userId: string): Promise<Dispute[]> {
     return this.disputeRepository.find({
-      where: [
-        { buyerId: userId },
-        { sellerId: userId }
-      ],
+      where: [{ buyerId: userId }, { sellerId: userId }],
       order: { createdAt: 'DESC' },
     });
   }
 
   async getOpenDisputes(): Promise<Dispute[]> {
     return this.disputeRepository.find({
-      where: [
-        { status: 'open' },
-        { status: 'under_review' }
-      ],
+      where: [{ status: 'open' }, { status: 'under_review' }],
     });
   }
 
@@ -109,4 +103,3 @@ export class DisputesService {
     return this.disputeRepository.save(dispute);
   }
 }
-

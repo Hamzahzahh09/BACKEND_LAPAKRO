@@ -7,147 +7,213 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server, WebSocket } from 'ws';
+import { IncomingMessage } from 'http';
 import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 
-interface AuthenticatedSocket extends Socket {
+interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
   userName?: string;
 }
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-    credentials: true,
-  },
-  namespace: '/chat',
+  path: '/ws/chat',
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private connectedUsers: Map<string, string[]> = new Map();
+  private readonly rooms: Map<string, Set<AuthenticatedWebSocket>> = new Map();
 
   constructor(
-    private chatService: ChatService,
-    private jwtService: JwtService,
+    private readonly chatService: ChatService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async handleConnection(client: AuthenticatedSocket) {
+  handleConnection(client: AuthenticatedWebSocket, req?: IncomingMessage) {
     try {
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.query?.token as string;
+      const rawUrl = req?.url || (client as any)?.upgradeReq?.url || '';
+      const url = new URL(rawUrl, 'http://localhost:3001');
+      const token = url.searchParams.get('token');
       if (token) {
         const payload = this.jwtService.verify(token);
         client.userId = payload.sub;
-        client.userName = payload.email;
+        client.userName = payload.name || payload.email;
       }
     } catch {
-      // Connection allowed without auth for now
+      // Allowed without auth initially
     }
   }
 
-  handleDisconnect(client: AuthenticatedSocket) {
-    if (client.userId) {
-      this.connectedUsers.delete(client.userId);
+  handleDisconnect(client: AuthenticatedWebSocket) {
+    for (const [roomId, clients] of this.rooms.entries()) {
+      clients.delete(client);
+      if (clients.size === 0) {
+        this.rooms.delete(roomId);
+      }
+    }
+  }
+
+  public broadcastToRoom(roomId: string, event: string, data: any) {
+    const clients = this.rooms.get(roomId);
+    if (!clients) return;
+    const payload = JSON.stringify({ event, data });
+    for (const client of clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(payload);
+      }
     }
   }
 
   @SubscribeMessage('join_room')
   async handleJoinRoom(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { transactionId: string },
+    @ConnectedSocket() client: AuthenticatedWebSocket,
+    @MessageBody()
+    data: {
+      conversationId?: string;
+      transactionId?: string;
+      token?: string;
+    },
   ) {
-    if (!client.userId) {
-      return { event: 'error', data: { message: 'Not authenticated' } };
+    if (!client.userId && data?.token) {
+      try {
+        const payload = this.jwtService.verify(data.token);
+        client.userId = payload.sub;
+        client.userName = payload.name || payload.email;
+      } catch {
+        // invalid token
+      }
     }
-    client.join(data.transactionId);
 
-    const rooms = this.connectedUsers.get(client.userId) || [];
-    rooms.push(data.transactionId);
-    this.connectedUsers.set(client.userId, rooms);
+    const roomId = data?.conversationId || data?.transactionId;
+    if (!roomId) return;
 
-    const messages = await this.chatService.getMessages(data.transactionId);
-    client.emit('chat_history', messages);
+    if (!this.rooms.has(roomId)) {
+      this.rooms.set(roomId, new Set());
+    }
+    this.rooms.get(roomId)!.add(client);
+
+    const messages = await this.chatService.getMessages(roomId);
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ event: 'chat_history', data: messages }));
+    }
   }
 
   @SubscribeMessage('leave_room')
   handleLeaveRoom(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { transactionId: string },
+    @ConnectedSocket() client: AuthenticatedWebSocket,
+    @MessageBody() data: { conversationId?: string; transactionId?: string },
   ) {
-    client.leave(data.transactionId);
+    const roomId = data?.conversationId || data?.transactionId;
+    if (roomId && this.rooms.has(roomId)) {
+      this.rooms.get(roomId)!.delete(client);
+    }
   }
 
   @SubscribeMessage('send_message')
   async handleMessage(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: {
-      transactionId: string;
+    @ConnectedSocket() client: AuthenticatedWebSocket,
+    @MessageBody()
+    data: {
+      conversationId?: string;
+      transactionId?: string;
       content: string;
+      token?: string;
       type?: 'text' | 'image' | 'file';
       fileUrl?: string;
     },
   ) {
-    if (!client.userId) {
-      return { event: 'error', data: { message: 'Not authenticated' } };
+    if (!client.userId && data?.token) {
+      try {
+        const payload = this.jwtService.verify(data.token);
+        client.userId = payload.sub;
+        client.userName = payload.name || payload.email;
+      } catch {
+        // invalid token
+      }
     }
 
+    if (!client.userId) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: 'error',
+            data: { message: 'Not authenticated' },
+          }),
+        );
+      }
+      return;
+    }
+    const roomId = data?.conversationId || data?.transactionId;
+    if (!roomId) return;
+
     const message = await this.chatService.sendMessage(
-      data.transactionId,
+      roomId,
       client.userId,
-      client.userName || 'Unknown',
+      client.userName || 'Pengguna',
       data.content,
       data.type || 'text',
       data.fileUrl || '',
     );
 
-    this.server.to(data.transactionId).emit('new_message', message);
-    return { event: 'message_sent', data: message };
+    this.broadcastToRoom(roomId, 'new_message', message);
   }
 
   @SubscribeMessage('mark_read')
   async handleMarkRead(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: AuthenticatedWebSocket,
     @MessageBody() data: { messageId: string },
   ) {
     const message = await this.chatService.markAsRead(data.messageId);
     if (message) {
-      this.server
-        .to(message.transactionId)
-        .emit('message_read', { messageId: data.messageId });
+      this.broadcastToRoom(message.transactionId, 'message_read', {
+        messageId: data.messageId,
+      });
     }
   }
 
   @SubscribeMessage('mark_all_read')
   async handleMarkAllRead(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { transactionId: string },
+    @ConnectedSocket() client: AuthenticatedWebSocket,
+    @MessageBody() data: { conversationId?: string; transactionId?: string },
   ) {
     if (!client.userId) return;
-    const count = await this.chatService.markAllAsRead(
-      data.transactionId,
-      client.userId,
-    );
-    this.server
-      .to(data.transactionId)
-      .emit('all_read', { userId: client.userId, count });
-  }
+    const roomId = data?.conversationId || data?.transactionId;
+    if (!roomId) return;
 
+    const count = await this.chatService.markAllAsRead(roomId, client.userId);
+    this.broadcastToRoom(roomId, 'all_read', {
+      userId: client.userId,
+      count,
+    });
+  }
 
   @SubscribeMessage('typing')
   handleTyping(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { transactionId: string; isTyping: boolean },
+    @ConnectedSocket() client: AuthenticatedWebSocket,
+    @MessageBody()
+    data: {
+      conversationId?: string;
+      transactionId?: string;
+      isTyping: boolean;
+    },
   ) {
     if (!client.userId) return;
-    client
-      .to(data.transactionId)
-      .emit('user_typing', {
-        userId: client.userId,
-        isTyping: data.isTyping,
-      });
+    const roomId = data?.conversationId || data?.transactionId;
+    if (!roomId) return;
+
+    const payload = JSON.stringify({
+      event: 'user_typing',
+      data: { userId: client.userId, isTyping: data.isTyping },
+    });
+    const clients = this.rooms.get(roomId);
+    if (clients) {
+      for (const target of clients) {
+        if (target !== client && target.readyState === WebSocket.OPEN) {
+          target.send(payload);
+        }
+      }
+    }
   }
 }

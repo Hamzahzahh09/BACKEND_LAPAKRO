@@ -44,7 +44,11 @@ export class WalletService {
     }
   }
 
-  async deposit(userId: string, amount: number, paymentMethod?: string): Promise<WalletTransaction> {
+  async deposit(
+    userId: string,
+    amount: number,
+    paymentMethod?: string,
+  ): Promise<WalletTransaction> {
     if (amount < 5000) {
       throw new HttpException(
         'Minimum deposit is Rp 5.000',
@@ -96,10 +100,7 @@ export class WalletService {
     const totalDeduction = amount + fee;
 
     if (Number(wallet.balance || 0) < totalDeduction) {
-      throw new HttpException(
-        'Insufficient balance',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Insufficient balance', HttpStatus.BAD_REQUEST);
     }
 
     const now = new Date();
@@ -137,4 +138,3 @@ export class WalletService {
     return { balance: Number(wallet.balance || 0) };
   }
 }
-

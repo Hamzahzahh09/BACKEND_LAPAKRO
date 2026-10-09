@@ -23,9 +23,15 @@ export class AuthController {
 
   @Post('google')
   @HttpCode(HttpStatus.OK)
-  async googleAuth(@Body() body: { email: string; name: string; googleId: string }) {
+  async googleAuth(
+    @Body() body: { email: string; name: string; googleId: string },
+  ) {
     const result = await this.authService.googleAuth(body);
-    return { success: true, data: result, message: 'Google authentication successful' };
+    return {
+      success: true,
+      data: result,
+      message: 'Google authentication successful',
+    };
   }
 
   @Post('send-otp')

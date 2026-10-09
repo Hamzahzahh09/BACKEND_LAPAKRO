@@ -39,7 +39,9 @@ export class UsersService {
   }
 
   async getProfile(userId: string): Promise<User> {
-    const profile = await this.userRepository.findOne({ where: { id: userId } });
+    const profile = await this.userRepository.findOne({
+      where: { id: userId },
+    });
     if (!profile) {
       const now = new Date();
       const newProfile = this.userRepository.create({
@@ -72,7 +74,10 @@ export class UsersService {
     return this.userRepository.save(profile);
   }
 
-  async updateMode(userId: string, mode: 'buyer' | 'seller' | 'both'): Promise<User> {
+  async updateMode(
+    userId: string,
+    mode: 'buyer' | 'seller' | 'both',
+  ): Promise<User> {
     const profile = await this.getProfile(userId);
     profile.mode = mode;
     profile.updatedAt = new Date();
@@ -82,13 +87,22 @@ export class UsersService {
   async applyAsSeller(userId: string, notes: string): Promise<User> {
     const profile = await this.getProfile(userId);
     if (profile.sellerApplicationStatus === 'approved') {
-      throw new HttpException('You are already an approved seller', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'You are already an approved seller',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (profile.sellerApplicationStatus === 'pending') {
-      throw new HttpException('Your application is still pending review', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Your application is still pending review',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (!profile.isVerified) {
-      throw new HttpException('Please verify your email first', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Please verify your email first',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     profile.sellerApplicationStatus = 'pending';
     profile.sellerApplicationNotes = notes;
@@ -96,21 +110,30 @@ export class UsersService {
     return this.userRepository.save(profile);
   }
 
-  async getSellerApplicationStatus(userId: string): Promise<{ status: string; notes: string }> {
+  async getSellerApplicationStatus(
+    userId: string,
+  ): Promise<{ status: string; notes: string | null }> {
     const profile = await this.getProfile(userId);
     return {
       status: profile.sellerApplicationStatus,
-      notes: profile.sellerApplicationNotes,
+      notes: profile.sellerApplicationNotes ?? null,
     };
   }
 
-  async findAll(page?: number, limit?: number, search?: string): Promise<User[]> {
+  async findAll(
+    page?: number,
+    limit?: number,
+    search?: string,
+  ): Promise<User[]> {
     if (page && limit) {
       const qb = this.userRepository.createQueryBuilder('user');
       if (search) {
-        qb.where('LOWER(user.name) LIKE :search OR LOWER(user.email) LIKE :search', {
-          search: `%${search.toLowerCase()}%`,
-        });
+        qb.where(
+          'LOWER(user.name) LIKE :search OR LOWER(user.email) LIKE :search',
+          {
+            search: `%${search.toLowerCase()}%`,
+          },
+        );
       }
       qb.orderBy('user.createdAt', 'DESC');
       const skip = (page - 1) * limit;
@@ -169,10 +192,17 @@ export class UsersService {
     });
   }
 
-  async approveSeller(userId: string, approve: boolean, notes: string): Promise<User> {
+  async approveSeller(
+    userId: string,
+    approve: boolean,
+    notes: string,
+  ): Promise<User> {
     const profile = await this.getProfile(userId);
     if (profile.sellerApplicationStatus !== 'pending') {
-      throw new HttpException('No pending application found', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'No pending application found',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (approve) {
       profile.role = 'seller';

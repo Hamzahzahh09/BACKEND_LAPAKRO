@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsIn, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsIn,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class SendMessageDto {
   @IsString()

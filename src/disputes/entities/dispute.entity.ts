@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('disputes')
 export class Dispute {
@@ -29,8 +35,8 @@ export class Dispute {
   @Column({ type: 'varchar', nullable: true })
   resolution: 'full_refund' | 'partial_refund' | 'proceed' | null;
 
-  @Column({ type: 'text', default: '' })
-  adminNote: string;
+  @Column({ type: 'text', nullable: true, default: null })
+  adminNote: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   winnerId: string | null;

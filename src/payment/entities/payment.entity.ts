@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('payments')
 export class Payment {
@@ -31,6 +37,12 @@ export class Payment {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  snapToken: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  externalId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
